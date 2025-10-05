@@ -57,7 +57,7 @@ export default function Home() {
 
             </div>
             <div
-                className="lg:mt-30 md:mx-auto w-full lg:w-2/3 h-full py-20 md:py-10 px-12 md:px-24 flex items-center justify-center border-[0.625px] bg-[#fff48d]">
+                className="lg:mt-30 md:mx-auto w-full lg:w-2/3 h-full py-20 md:py-10 px-6 md:px-24 flex items-center justify-center border-[0.625px] bg-[#fff48d]">
                 <div className="w-full space-y-6 ">
                     <div className={"flex-row flex gap-10"}>
                         <h1 style={{ fontFamily: 'Walsheim-bold, sans-serif' }} className="text-[30px] md:text-[40px] font-semibold tracking-tight text-center mt-8 ">
