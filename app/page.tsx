@@ -4,7 +4,7 @@ import {
     IconButton,
 } from "@mui/material";
 import { Modal, Box } from "@mui/material";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import Image from "next/image";
 
 export default function Home() {
@@ -12,6 +12,8 @@ export default function Home() {
 
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
+
+
     return (
         <>
             <div

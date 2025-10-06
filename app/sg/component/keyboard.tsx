@@ -1,11 +1,11 @@
-import { useState } from "react";
 
-export default function NumericKeypadGrid() {
-    const [value, setValue] = useState("");
+type NumericKeypadGridProps = {
+    value: string;
+    handleClick: (param: string) => void;
+    reset: () => void;
+};
 
-    const handleClick = (num : string) => {
-        setValue(value + num);
-    };
+export default function NumericKeypadGrid({ value, handleClick, reset }: NumericKeypadGridProps) {
 
 
     const boxes = Array.from({ length: 6 }).map((_, i) => (
@@ -34,7 +34,7 @@ export default function NumericKeypadGrid() {
             <div className="flex flex-col items-center space-y-4 mb-6">
                 <div className="flex gap-2  mb-[5.7px]">
                     {boxes}
-                    <div className={"mt-2 ml-[3px] cursor-pointer "} onClick={() => {setValue("")}}>
+                    <div className={"mt-2 ml-[3px] cursor-pointer "} onClick={() => {reset()}}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                              viewBox="0 0 24 24" fill="none" stroke="oklch(55.1% 0.027 264.364)"
                              stroke-width="3.5"
